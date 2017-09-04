@@ -282,6 +282,10 @@ Using templated file and invoking console command:
 #  / Using templated file and invoking console command
 ```
 
+## Code in action
+
+You can try by yourself by cloning or forking https://github.com/Voronenko/devops-traefik-deploy-template
+
 ## Conclusion
 
 Traefik is young project, for easy configuration you should pay. And payment's currency is rps (request per second)
