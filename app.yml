@@ -117,7 +117,7 @@
 
     -  debug: var="app1_output"
 
-#  /
+#  / Using definition directly
 
 #  Using templated file and invoking console command
 

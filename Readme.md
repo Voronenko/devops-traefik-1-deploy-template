@@ -192,9 +192,95 @@ More over, even in example 1, if we would use `docker-compose up --scale whoami1
 
 ![alt text](https://raw.githubusercontent.com/Voronenko/devops-traefik-deploy-template/master/docs/images/traefik_1app_scaled_services.png "one app scaled services")
 
-## Deploying traefik enabled application with ansible
+## Deploying traefik enabled applications
 
-TBD
+As you see at that moment you are free to decide who will you manage your applications. You would definitely like to introduce some rolling deployment process. You can use ansible play too for this purposes, execute shell batches, or even manually.
+
+Ansible - template your docker-compose.yml and use docker_service module to launch
+```
+#  Using templated file and docker_service module
+
+    - name: Application | Template docker-compose.yml for app 1
+      template: src="{{playbook_dir}}/templates/docker-compose/application1/docker-compose.yml.j2" dest="{{base_application_dir}}/application1/docker-compose.yml"
+      become: yes
+      tags:
+        - app
+
+    - name: Application | Deploy using compose file
+      docker_service:
+        project_src: "{{base_application_dir}}/application1/"
+        build: no
+        restarted: true
+      register: app1_output
+
+    -  debug: var="app1_output"
+
+#  / Using templated file and docker_service module
+```
+
+Ansible - using direct definition (hard to read for myself)
+```
+#  Using definition directly in docker_service directive
+    - name: Application | Deploy using definition in docker_service
+      docker_service:
+        build: no
+        restarted: true
+        project_name: application2_by_def
+        definition:
+          version: '2'
+          services:
+            whoami1_by_def:
+              image: emilevauge/whoami
+              networks:
+                - web
+              labels:
+                - "traefik.backend=whoami_by_def"
+                - "traefik.domain=xenial.test"
+                - "traefik.frontend.rule=Host:whoami_by_def.xenial.test"
+                - "traefik.frontend.entryPoints=http"
+                - "traefik.enable=true"
+            whoami2_by_def:
+              image: emilevauge/whoami
+              networks:
+                - web
+              labels:
+                - "traefik.backend=whoami_by_def"
+                - "traefik.domain=xenial.test"
+                - "traefik.frontend.rule=Host:whoami_by_def.xenial.test"
+                - "traefik.frontend.entryPoints=http"
+                - "traefik.enable=true"
+          networks:
+            web:
+              external:
+                name: traefik_webgateway
+      register: app2_output
+      become: yes
+
+    -  debug: var="app1_output"
+
+#  / Using definition directly
+```
+
+Using templated file and invoking console command: 
+```
+#  Using templated file and invoking console command
+
+    - name: Application | Template docker-compose.yml for app 3
+      template: src="{{playbook_dir}}/templates/docker-compose/application3/docker-compose.yml.j2" dest="{{base_application_dir}}/application3/docker-compose.yml"
+      become: yes
+      tags:
+        - app
+
+    - name: Application | Put in action using docker-compose command
+      shell: "docker-compose up -d"
+      args:
+        chdir: "{{base_application_dir}}/application3"
+      become: yes
+      tags:
+        - app
+
+#  / Using templated file and invoking console command
+```
 
 ## Conclusion
 
