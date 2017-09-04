@@ -1,0 +1,27 @@
+version: '2'
+
+services:
+  whoami1:
+    image: emilevauge/whoami
+    networks:
+      - web
+    labels:
+      - "traefik.backend=whoami"
+      - "traefik.domain=xenial.test"
+      - "traefik.frontend.rule=Host:whoami.xenial.test"
+      - "traefik.frontend.entryPoints=http"
+      - "traefik.enable=true"
+  whoami2:
+    image: emilevauge/whoami
+    networks:
+      - web
+    labels:
+      - "traefik.backend=whoami"
+      - "traefik.domain=xenial.test"
+      - "traefik.frontend.rule=Host:whoami.xenial.test"
+      - "traefik.frontend.entryPoints=http"
+      - "traefik.enable=true"
+networks:
+  web:
+    external:
+      name: traefik_webgateway

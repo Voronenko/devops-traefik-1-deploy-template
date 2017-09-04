@@ -1,0 +1,17 @@
+version: '2'
+
+services:
+  whoami1_using_console:
+    image: emilevauge/whoami
+    networks:
+      - web
+    labels:
+      - "traefik.backend=whoami_using_console"
+      - "traefik.domain=xenial.test"
+      - "traefik.frontend.rule=Host:whoami_console.xenial.test"
+      - "traefik.frontend.entryPoints=http"
+      - "traefik.enable=true"
+networks:
+  web:
+    external:
+      name: traefik_webgateway

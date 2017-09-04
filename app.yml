@@ -1,0 +1,138 @@
+---
+- hosts: www
+
+  vars:
+    - root_dir: ..
+    - base_application_dir: /opt/traefik
+
+    - app1_image: "emilevauge/whoami"
+    - app1_traefik_config:
+      - {
+        name: "traefik.backend",
+        value: "whoami_deployed"
+        }
+      - {
+        name: "traefik.domain",
+        value: "xenial.test"
+        }
+      - {
+        name: "traefik.frontend.rule",
+        value: "Host:whoami_deployed.xenial.test"
+        }
+      - {
+        name: "traefik.frontend.entryPoints",
+        value: "http"
+        }
+      - {
+        name: "traefik.enable",
+        value: "true"
+        }
+
+
+  pre_tasks:
+    - debug: msg="Pre tasks section"
+
+
+  tasks:
+    - debug: msg="Tasks section"
+
+    - name: Application | Create directories with docker-compose definitions
+      file: path="{{item}}" state="directory"
+      become: yes
+      with_items:
+        - "{{base_application_dir}}"
+        - "{{base_application_dir}}/application1"
+        - "{{base_application_dir}}/application2"
+        - "{{base_application_dir}}/application3"
+      tags:
+        - app
+
+#   See bug  https://github.com/ansible/ansible/issues/20492
+    - name: Application | Install docker ansible module
+      pip: name="docker-compose" version="1.9.0"
+      become: yes
+
+
+    - name: Application | Create network
+      docker_network:
+        name: traefik_webgateway
+      become: yes
+      tags:
+        - app
+
+#  Using templated file and docker_service module
+
+    - name: Application | Template docker-compose.yml for app 1
+      template: src="{{playbook_dir}}/templates/docker-compose/application1/docker-compose.yml.j2" dest="{{base_application_dir}}/application1/docker-compose.yml"
+      become: yes
+      tags:
+        - app
+
+    - name: Application | Deploy using compose file
+      docker_service:
+        project_src: "{{base_application_dir}}/application1/"
+        build: no
+        restarted: true
+      register: app1_output
+
+    -  debug: var="app1_output"
+
+#  / Using templated file and docker_service module
+
+#  Using definition directly in docker_service directive
+    - name: Application | Deploy using definition in docker_service
+      docker_service:
+        build: no
+        restarted: true
+        project_name: application2_by_def
+        definition:
+          version: '2'
+          services:
+            whoami1_by_def:
+              image: emilevauge/whoami
+              networks:
+                - web
+              labels:
+                - "traefik.backend=whoami_by_def"
+                - "traefik.domain=xenial.test"
+                - "traefik.frontend.rule=Host:whoami_by_def.xenial.test"
+                - "traefik.frontend.entryPoints=http"
+                - "traefik.enable=true"
+            whoami2_by_def:
+              image: emilevauge/whoami
+              networks:
+                - web
+              labels:
+                - "traefik.backend=whoami_by_def"
+                - "traefik.domain=xenial.test"
+                - "traefik.frontend.rule=Host:whoami_by_def.xenial.test"
+                - "traefik.frontend.entryPoints=http"
+                - "traefik.enable=true"
+          networks:
+            web:
+              external:
+                name: traefik_webgateway
+      register: app2_output
+      become: yes
+
+    -  debug: var="app1_output"
+
+#  /
+
+#  Using templated file and invoking console command
+
+    - name: Application | Template docker-compose.yml for app 3
+      template: src="{{playbook_dir}}/templates/docker-compose/application3/docker-compose.yml.j2" dest="{{base_application_dir}}/application3/docker-compose.yml"
+      become: yes
+      tags:
+        - app
+
+    - name: Application | Put in action using docker-compose command
+      shell: "docker-compose up -d"
+      args:
+        chdir: "{{base_application_dir}}/application3"
+      become: yes
+      tags:
+        - app
+
+#  / Using templated file and invoking console command

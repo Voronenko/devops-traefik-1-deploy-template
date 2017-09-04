@@ -1,0 +1,16 @@
+version: '2'
+
+services:
+  whoami1_deployed:
+    image: {{app1_image}}
+    restart: always
+    networks:
+      - web
+    labels:
+{% for line in app1_traefik_config %}
+      - "{{line.name}}={{line.value}}"
+{% endfor %}
+networks:
+  web:
+    external:
+      name: traefik_webgateway
